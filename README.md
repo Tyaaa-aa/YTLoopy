@@ -34,6 +34,21 @@ slow it down without changing the pitch, and save it to a library you can come b
 4. Click **Load unpacked** and pick the unzipped folder (the one that contains `manifest.json`).
 5. Pin YTLoopy from the puzzle-piece menu so the library is one click away.
 
+## Updating
+
+Your library is kept when you update, as long as you **replace the files and reload** rather than removing the extension:
+
+1. Download the new zip and unzip it, either over your existing YTLoopy folder or into a new folder.
+2. In `chrome://extensions`, click the reload icon on YTLoopy. If you used a new folder, click **Load unpacked** and pick it; it replaces the old copy and keeps your data.
+3. Don't click **Remove**. Chrome deletes an extension's data when it's removed.
+
+Keep a backup anyway: **Export** in the library saves everything to a file, and the library reminds you once you've
+saved a few sections. Backups from any version import into any later version.
+
+> **Coming from 1.0.0 or 1.0.1?** Those versions had no fixed extension ID, so moving to 1.1.0 needs a one-time
+> export and import: open the old YTLoopy library, click **Export**, then load 1.1.0 and click **Import**.
+> From 1.1.0 on, updates keep your data automatically.
+
 ## How to use
 
 1. Open a YouTube video. The YTLoopy bar sits right under the player.
@@ -72,6 +87,7 @@ npm run package      # build dist/ytloopy-<version>.zip
 - `src/sidepanel/` – the library, import/export and settings.
 - `src/shared/` – storage, data model, time helpers and icons used by both.
 - `docs/spec.md` – the design spec.
+- `docs/versioning.md` – how stored data survives updates, and how to add migrations for new features.
 
 ## License
 

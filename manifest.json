@@ -1,7 +1,8 @@
 {
   "manifest_version": 3,
   "name": "YTLoopy",
-  "version": "1.0.1",
+  "version": "1.1.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvbOOqRZnkh7wUPnsFVuniZlXo0RdrFgqBVpvCynuAbnbYrpzmS7RJDdBU+R5G7D0PjGKBDTg/gyPqns3Re+A/CGonD6c1o7JpJbZnmY1em6QFd9KkKCci6XR842rXzZrqVaCrZ1PdvAjIgSxkEt7u1AoaB1GAJROe3sNP/AsS5XkkWaQQms+kwhIhbr5d/2nIpHFVEskR6bAZnX37LXAuD7bhB5FABkGzs8kfY1KYc/3SfX9yQbUxpr6sjLiZ09yYPtO9PofwDcmfLSym4OWbKszJBKnRSWB9S8AK4QN/blarD1Hv4CcS8P/hZ7OfivtXKf10sKDAzYN2JbRTgpZ3wIDAQAB",
   "description": "Loop, slow down and bookmark sections of YouTube videos. Built for practising music.",
   "icons": {
     "16": "icons/icon16.png",
@@ -23,7 +24,7 @@
   "side_panel": {
     "default_path": "src/sidepanel/sidepanel.html"
   },
-  "permissions": ["storage", "sidePanel"],
+  "permissions": ["storage", "unlimitedStorage", "sidePanel"],
   "host_permissions": ["https://www.youtube.com/*"],
   "content_scripts": [
     {

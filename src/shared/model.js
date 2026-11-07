@@ -1,6 +1,6 @@
 // Pure data helpers: defaults, validation, import/export merging. No chrome.* here so it can be unit tested.
+import { SCHEMA_VERSION, migrate } from './migrations.js';
 
-export const EXPORT_VERSION = 1;
 export const SPEED_MIN = 0.25;
 export const SPEED_MAX = 2;
 
@@ -109,17 +109,24 @@ export function parseExport(json) {
   if (!data || data.app !== 'YTLoopy' || !Array.isArray(data.videos)) {
     throw new Error("That file isn't a YTLoopy export.");
   }
-  if (data.version > EXPORT_VERSION) {
+  const version = Number.isInteger(data.version) && data.version > 0 ? data.version : 1;
+  if (version > SCHEMA_VERSION) {
     throw new Error('That file comes from a newer YTLoopy. Update the extension first.');
   }
-  const videos = data.videos.map(sanitizeVideo).filter(Boolean);
-  return { videos };
+  // Older files are upgraded with the same steps that upgrade stored data.
+  const asStorage = Object.fromEntries(
+    data.videos.filter((v) => v && isVideoId(v.id)).map((v) => [`video:${v.id}`, v]),
+  );
+  const { data: upgraded } = migrate(asStorage, { from: version });
+  const videos = Object.values(upgraded).map(sanitizeVideo).filter(Boolean);
+  return { videos, version };
 }
 
-export function buildExport(videos) {
+export function buildExport(videos, appVersion = '') {
   return {
     app: 'YTLoopy',
-    version: EXPORT_VERSION,
+    version: SCHEMA_VERSION,   // data format; what import checks
+    appVersion,                // informational only
     exportedAt: new Date().toISOString(),
     videos,
   };

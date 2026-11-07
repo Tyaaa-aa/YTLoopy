@@ -14,6 +14,8 @@ let nowId = null;          // video id in the active tab, if it's a watch page
 let nowTabId = null;
 const expanded = new Set();
 let editing = null;        // { videoId, sectionId } being renamed
+let backupInfo = { lastExportAt: 0, snoozeUntil: 0 };
+const DAY = 24 * 60 * 60 * 1000;
 
 // ---------- boot ----------
 
@@ -26,14 +28,16 @@ $('.search-ic').innerHTML = icon('search', 16);
 $('#version').textContent = `YTLoopy ${chrome.runtime.getManifest().version}`;
 
 async function load() {
-  [videos, settings] = await Promise.all([store.getAllVideos(), store.getSettings()]);
+  [videos, settings, backupInfo] = await Promise.all([store.getAllVideos(), store.getSettings(), store.getBackupInfo()]);
   render();
   renderSettings();
 }
 
 store.onStorageChange(async (changes) => {
   if (Object.keys(changes).some((k) => k.startsWith('video:'))) videos = await store.getAllVideos();
-  if (changes.settings) { settings = await store.getSettings(); renderSettings(); }
+  if (changes.settings) settings = await store.getSettings();
+  if (changes.backupInfo) backupInfo = await store.getBackupInfo();
+  if (changes.settings || changes.backupInfo) renderSettings();
   render();
 });
 
@@ -74,6 +78,7 @@ function render() {
   const list = videos.filter((v) => matches(v, q));
   list.sort(sort === 'title' ? (x, y) => x.title.localeCompare(y.title) : (x, y) => y.updatedAt - x.updatedAt);
 
+  renderBackup();
   const nowVideo = nowId && videos.find((v) => v.id === nowId);
   const now = $('#now');
   now.replaceChildren();
@@ -106,6 +111,29 @@ function render() {
   }
   el.insertAdjacentHTML('beforeend', `<h2 class="sec-title">${q ? 'Results' : 'All videos'} <span class="count">${rest.length}</span></h2>`);
   for (const v of rest) el.appendChild(card(v, false, q));
+}
+
+// Unpacked extensions lose their data if they're removed, so nudge people to keep a backup file
+// once they have something worth keeping.
+function renderBackup() {
+  const el = $('#backup');
+  const sections = videos.reduce((n, v) => n + v.sections.length, 0);
+  const now = Date.now();
+  const due = sections >= 3 && now - backupInfo.lastExportAt > 30 * DAY && now > backupInfo.snoozeUntil;
+  el.hidden = !due;
+  if (!due) return;
+  el.innerHTML = `
+    <div class="banner">
+      <div><b>Back up your library</b><div class="sub">${backupInfo.lastExportAt ? `Last backup ${ago(backupInfo.lastExportAt)}.` : 'No backup yet.'} Your sections live only in this browser, and removing YTLoopy deletes them.</div></div>
+      <div class="banner-actions"><button class="btn sm" data-act="snooze">Later</button><button class="btn sm primary" data-act="export">Export</button></div>
+    </div>`;
+}
+
+function ago(ts) {
+  const days = Math.floor((Date.now() - ts) / DAY);
+  if (days < 1) return 'today';
+  if (days === 1) return 'yesterday';
+  return `${days} days ago`;
 }
 
 function card(v, isNow, q = '') {
@@ -243,7 +271,8 @@ const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g
 
 function exportAll() {
   if (!videos.length) { toast('Nothing to export yet'); return; }
-  download(buildExport(videos), `ytloopy-library-${today()}.json`);
+  download(buildExport(videos, chrome.runtime.getManifest().version), `ytloopy-library-${today()}.json`);
+  store.patchBackupInfo({ lastExportAt: Date.now() });
   const n = videos.reduce((sum, v) => sum + v.sections.length, 0);
   toast(`Exported ${videos.length} video${videos.length > 1 ? 's' : ''}, ${n} section${n === 1 ? '' : 's'}`);
 }
@@ -281,7 +310,7 @@ function openMenu(anchor, v) {
     if (!b) return;
     closeMenu();
     if (b.dataset.m === 'open') openAt(v.id, 0);
-    if (b.dataset.m === 'export') download(buildExport([v]), `ytloopy-${slug(v.title)}.json`);
+    if (b.dataset.m === 'export') download(buildExport([v], chrome.runtime.getManifest().version), `ytloopy-${slug(v.title)}.json`);
     if (b.dataset.m === 'delete') deleteVideo(v);
   });
 }
@@ -316,6 +345,7 @@ document.addEventListener('click', (e) => {
     case 'export': exportAll(); break;
     case 'settings': showSettings(true); break;
     case 'back': showSettings(false); break;
+    case 'snooze': store.patchBackupInfo({ snoozeUntil: Date.now() + 7 * DAY }); break;
     case 'resetKeys': store.patchSettings({ keys: { ...DEFAULT_KEYS } }); toast('Shortcuts reset'); break;
     default: break;
   }
@@ -353,6 +383,7 @@ let capturing = null; // shortcut id waiting for a key press
 function renderSettings() {
   if (!settings) return;
   $('#pitch').setAttribute('aria-checked', String(settings.preservePitch));
+  $('#lastBackup').textContent = backupInfo.lastExportAt ? `Last exported ${ago(backupInfo.lastExportAt)}.` : 'Not exported yet.';
   seg($('#gap'), [0, 1, 2, 3, 5], settings.gap, (v) => (v ? `${v}s` : 'Off'), (v) => store.patchSettings({ gap: v }));
   seg($('#step'), [0.05, 0.1, 0.25], settings.speedStep, (v) => `${v}×`, (v) => store.patchSettings({ speedStep: v }));
   $('#keys').innerHTML = Object.entries(KEY_LABELS).map(([id, label]) => `

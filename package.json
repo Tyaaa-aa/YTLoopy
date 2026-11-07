@@ -1,6 +1,6 @@
 {
   "name": "ytloopy",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "private": true,
   "description": "Loop, slow down and bookmark sections of YouTube videos for music practice.",
   "type": "module",
