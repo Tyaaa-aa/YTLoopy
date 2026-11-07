@@ -1,0 +1,13 @@
+{
+  "name": "ytloopy",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Loop, slow down and bookmark sections of YouTube videos for music practice.",
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/",
+    "icons": "node scripts/build-icons.js",
+    "package": "python3 scripts/package.py"
+  },
+  "license": "MIT"
+}

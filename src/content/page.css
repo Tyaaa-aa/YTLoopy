@@ -1,0 +1,19 @@
+/* Styles for the bits YTLoopy draws inside YouTube's player (outside the bar's shadow root). */
+.ytl-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 40; }
+.ytl-ov-region {
+  position: absolute; top: -1px; bottom: -1px; border-radius: 2px;
+  background: rgba(167, 139, 250, 0.35); box-shadow: inset 2px 0 0 #a78bfa, inset -2px 0 0 #f472b6;
+}
+.ytl-ov-region.on { background: rgba(167, 139, 250, 0.55); }
+.ytl-ov-a { position: absolute; top: -3px; bottom: -3px; width: 2px; margin-left: -1px; background: #a78bfa; }
+.ytl-ov-marker {
+  position: absolute; top: -8px; width: 8px; height: 6px; margin-left: -4px; background: #fbbf24;
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+}
+.ytl-osd {
+  position: absolute; top: 12%; left: 50%; z-index: 70; transform: translate(-50%, -4px);
+  padding: 8px 16px; border-radius: 20px; background: rgba(0, 0, 0, 0.72); color: #fff;
+  font: 500 15px/1.2 "Roboto", Arial, sans-serif; font-variant-numeric: tabular-nums; white-space: pre;
+  pointer-events: none; opacity: 0; transition: opacity 0.15s, transform 0.15s;
+}
+.ytl-osd.show { opacity: 1; transform: translate(-50%, 0); }

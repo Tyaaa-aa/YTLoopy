@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YTLoopy library</title>
+  <link rel="stylesheet" href="sidepanel.css">
+</head>
+<body>
+  <header class="head">
+    <div class="brand"><span class="logo"></span><span>YTLoopy</span></div>
+    <div class="head-actions">
+      <button class="ic" data-act="import" title="Import a library file"></button>
+      <button class="ic" data-act="export" title="Export your whole library"></button>
+      <button class="ic" data-act="settings" title="Settings"></button>
+    </div>
+  </header>
+
+  <main id="library">
+    <div class="tools">
+      <label class="search"><span class="search-ic"></span><input type="search" id="q" placeholder="Search videos, sections, markers" autocomplete="off"></label>
+      <select id="sort" aria-label="Sort">
+        <option value="recent">Recent</option>
+        <option value="title">A–Z</option>
+      </select>
+    </div>
+    <section id="now"></section>
+    <section id="list"></section>
+  </main>
+
+  <main id="settings" hidden>
+    <div class="settings-head">
+      <button class="ic" data-act="back" title="Back to library"></button>
+      <h2>Settings</h2>
+    </div>
+    <div class="group">
+      <div class="row">
+        <div><div class="label">Keep pitch when changing speed</div><div class="sub">Slowed-down audio stays in tune. Turn off for a tape-style pitch drop.</div></div>
+        <button class="switch" role="switch" id="pitch" aria-label="Keep pitch"><span></span></button>
+      </div>
+      <div class="row col">
+        <div><div class="label">Pause before each repeat</div><div class="sub">A moment to reset your hands before the loop starts again.</div></div>
+        <div class="seg" id="gap"></div>
+      </div>
+      <div class="row col">
+        <div><div class="label">Speed step</div><div class="sub">How much − / + and the keyboard change the speed.</div></div>
+        <div class="seg" id="step"></div>
+      </div>
+    </div>
+    <h3>Keyboard shortcuts</h3>
+    <p class="sub">Click a shortcut, then press the key you want. They work on any YouTube video page and never fire while you're typing.</p>
+    <div class="group" id="keys"></div>
+    <button class="link" data-act="resetKeys">Reset shortcuts to defaults</button>
+    <h3>Your data</h3>
+    <p class="sub">Everything is stored on this device only. Export to back it up or move it to another browser; importing merges with what's already here and never deletes anything.</p>
+    <div class="data-actions">
+      <button class="btn" data-act="export"></button>
+      <button class="btn" data-act="import"></button>
+    </div>
+    <p class="sub version" id="version"></p>
+  </main>
+
+  <input type="file" id="file" accept=".json,application/json" hidden>
+  <div class="toast" hidden><span class="msg"></span><button class="toast-act"></button></div>
+  <script type="module" src="sidepanel.js"></script>
+</body>
+</html>
