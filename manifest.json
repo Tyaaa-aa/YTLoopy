@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YTLoopy",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Loop, slow down and bookmark sections of YouTube videos. Built for practising music.",
   "icons": {
     "16": "icons/icon16.png",
@@ -26,6 +26,11 @@
   "permissions": ["storage", "sidePanel"],
   "host_permissions": ["https://www.youtube.com/*"],
   "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["src/content/guard.js"],
+      "run_at": "document_start"
+    },
     {
       "matches": ["https://www.youtube.com/*"],
       "js": ["src/content/loader.js"],

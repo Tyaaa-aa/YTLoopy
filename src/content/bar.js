@@ -270,6 +270,9 @@ export function createBar(S, A) {
     el.pop.style.left = `${clamp(ar.left - br.left + ar.width / 2 - pw / 2, 8, br.width - pw - 8)}px`;
     el.pop.style.top = `${ar.bottom - br.top + 8}px`;
     onReady?.(el.pop);
+    for (const input of el.pop.querySelectorAll('input')) {
+      input.ytlKey ||= (e) => { if (e.key === 'Escape') closePop(); };
+    }
   }
   function closePop() {
     el.pop.hidden = true;
@@ -354,9 +357,10 @@ export function createBar(S, A) {
       input.value = active && modified ? active.name : A.suggestName();
       input.focus();
       input.select();
-      input.addEventListener('keydown', (e) => {
+      input.ytlKey = (e) => {
         if (e.key === 'Enter') pop.querySelector('.btn.primary').click();
-      });
+        if (e.key === 'Escape') closePop();
+      };
     }, 'w-save');
   }
 
@@ -378,7 +382,10 @@ export function createBar(S, A) {
         if (label && label !== m.label) A.updateMarker(m.id, { label });
       };
       input.addEventListener('change', commit);
-      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { commit(); closePop(); } });
+      input.ytlKey = (e) => {
+        if (e.key === 'Enter') commit();
+        if (e.key === 'Enter' || e.key === 'Escape') closePop();
+      };
     }, 'w-marker');
   }
 
@@ -468,8 +475,7 @@ export function createBar(S, A) {
     };
     input.addEventListener('focus', () => input.select());
     input.addEventListener('blur', commit);
-    input.addEventListener('keydown', (e) => {
-      e.stopPropagation();
+    input.ytlKey = (e) => {
       if (e.key === 'Enter') input.blur();
       if (e.key === 'Escape') { revert(); input.blur(); }
       if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -477,7 +483,7 @@ export function createBar(S, A) {
         nudge(k, (e.key === 'ArrowUp' ? 1 : -1) * (e.shiftKey ? 1 : 0.1));
         input.value = S[k] == null ? '' : formatTime(S[k]);
       }
-    });
+    };
     input.closest('.tf').addEventListener('wheel', (e) => {
       if (S[k] == null) return;
       e.preventDefault();
@@ -551,12 +557,6 @@ export function createBar(S, A) {
   };
   el.tl.addEventListener('pointerup', endDrag);
   el.tl.addEventListener('pointercancel', endDrag);
-
-  // Keep keystrokes typed into our inputs from reaching YouTube's shortcuts.
-  root.addEventListener('keydown', (e) => {
-    const t = e.composedPath()[0];
-    if (t instanceof HTMLInputElement) e.stopPropagation();
-  });
 
   render();
   return { host, render, renderControls, renderTimeline, renderPlayhead, renderChips, renderLoopCount, toast };
