@@ -10,7 +10,8 @@ slow it down without changing the pitch, and save it to a library you can come b
 ## Features
 
 - **A–B looping** with clean repeats (checked every frame, not just a few times a second).
-- **Speed control** from 0.25× to 2× in 0.05× steps, with presets and a slider.
+- **Speed control** from 0.25× to 2× in 0.05× steps, with presets and a slider. A loop's speed stays with the loop:
+  turning the loop off or clearing it, or opening another video, goes back to your normal YouTube speed.
 - **Keep pitch** toggle (on by default): slowed audio stays in tune. Turn it off for a tape-style pitch drop.
 - **Mini timeline** with draggable A/B handles, drag-to-select a loop, snapping to markers, and **zoom to loop** for precise edges.
 - **Markers**: drop one at the current time, rename it, jump to it, or use it as A or B.

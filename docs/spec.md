@@ -29,8 +29,12 @@ slow it down, drop markers, and keep a library of saved sections.
 - requestAnimationFrame check (plus `timeupdate` fallback for background tabs): when time ≥ B, seek to A.
 - Paused while an ad plays (`#movie_player.ad-showing`).
 - Optional gap (0–5 s) before each repeat. Optional speed trainer: +step every N repeats up to a target.
-- Speed applied via `video.playbackRate`; `preservesPitch` follows the setting. Re-applied on new video
-  load. If the user changes speed with YouTube's own menu, YTLoopy adopts that value.
+- Speed applied via `video.playbackRate`; `preservesPitch` follows the setting.
+- A loop's speed belongs to the loop. YTLoopy remembers the person's normal speed (whatever YouTube
+  plays at outside YTLoopy) and returns to it when the loop is switched off, cleared or its section is
+  deleted, and whenever a new video opens. Switching the loop back on restores the loop's speed.
+  Changing speed without a loop affects the current video only. A change made in YouTube's own speed
+  menu while no loop is on becomes the new normal speed.
 
 ## Keyboard (defaults avoid YouTube's own keys; ignored while typing)
 `[` set A · `]` set B · `\` toggle loop · `'` jump to A · `-` / `=` speed down / up · `;` add marker

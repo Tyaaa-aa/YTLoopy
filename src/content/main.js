@@ -11,7 +11,9 @@ const S = {
   a: null,
   b: null,
   loopOn: false,
-  speed: 1,
+  speed: 1,           // the speed YTLoopy shows and applies
+  base: null,         // the person's normal speed (YouTube's own), restored outside a loop
+  loopSpeed: null,    // a loop's speed, kept while the loop is switched off
   record: null,       // stored data for this video ({ sections, markers }) or null
   settings: null,
   activeId: null,     // id of the saved section currently loaded
@@ -74,10 +76,15 @@ async function check() {
 async function enterVideo(id, player, video) {
   clearGap();
   Object.assign(S, {
-    videoId: id, player, a: null, b: null, loopOn: false, activeId: null, loops: 0, zoom: false,
+    videoId: id, player, a: null, b: null, loopOn: false, activeId: null, loops: 0, zoom: false, loopSpeed: null,
   });
   bindVideo(video);
-  S.speed = round2(video.playbackRate || 1);
+  // YouTube reuses the <video> element, so it may still carry the last video's loop speed.
+  // A new video starts at the normal speed instead.
+  if (S.base == null) S.base = round2(video.playbackRate || 1);
+  S.speed = S.base;
+  S.adoptBlockUntil = 0;
+  applyRate();
   S.record = await store.getVideo(id);
   render();
   const sid = await store.takePending(id);
@@ -89,6 +96,7 @@ async function enterVideo(id, player, video) {
 
 function leaveVideo() {
   clearGap();
+  if (S.base != null) { S.speed = S.base; applyRate(); }
   S.videoId = null;
   S.loopOn = false;
   S.record = null;
@@ -104,8 +112,10 @@ function bindVideo(video) {
   video.addEventListener('ratechange', onRate);
   video.addEventListener('loadedmetadata', () => {
     if (S.video !== video) return;
-    S.adoptBlockUntil = performance.now() + 1500;
-    applyRate();
+    if (overriding()) {
+      S.adoptBlockUntil = performance.now() + 1500;
+      applyRate();
+    }
     render();
   });
   video.addEventListener('play', () => {
@@ -142,8 +152,10 @@ function watchAds() {
     const ad = isAd();
     if (S.wasAd && !ad) {
       // Ad finished: YouTube resets the rate, so put ours back.
-      S.adoptBlockUntil = performance.now() + 1500;
-      applyRate();
+      if (overriding()) {
+        S.adoptBlockUntil = performance.now() + 1500;
+        applyRate();
+      }
     }
     S.wasAd = ad;
   });
@@ -154,6 +166,7 @@ function watchAds() {
 // ---------- speed ----------
 
 const round2 = (v) => Math.round(v * 100) / 100;
+const overriding = () => S.base != null && Math.abs(S.speed - S.base) > 0.001;
 
 function applyRate() {
   const v = S.video;
@@ -171,8 +184,9 @@ function onRate() {
   const now = performance.now();
   if (now - S.ourRateAt < 300) return;
   if (now < S.adoptBlockUntil) { applyRate(); return; }
-  // Changed through YouTube's own speed menu: follow it.
+  // Changed through YouTube's own speed menu: follow it. Outside a loop that's the new normal speed.
   S.speed = round2(v.playbackRate);
+  if (!S.loopOn) S.base = S.speed;
   bar?.renderControls();
 }
 
@@ -266,7 +280,7 @@ function setB(t = now(), { flash: show } = {}) {
     return;
   }
   S.b = t;
-  S.loopOn = true;   // setting the end point is the moment people expect the loop to start
+  startLoop();   // setting the end point is the moment people expect the loop to start
   changed();
   if (show) flash(`B  ${formatTime(t)} · Loop on`);
 }
@@ -284,18 +298,38 @@ function toggleLoop({ flash: show } = {}) {
     if (show) flash(hint);
     return;
   }
-  S.loopOn = !S.loopOn;
-  if (S.loopOn && (now() < S.a || now() >= S.b)) seek(S.a);
-  if (!S.loopOn) clearGap();
+  if (!S.loopOn) {
+    startLoop();
+    if (now() < S.a || now() >= S.b) seek(S.a);
+  } else {
+    S.loopOn = false;
+    // A loop's speed belongs to the loop: switch back to normal speed until it's on again.
+    clearGap();
+    S.loopSpeed = S.speed;
+    resetSpeed();
+  }
   S.loops = 0;
   render();
   if (show) flash(S.loopOn ? 'Loop on' : 'Loop off');
 }
 
 function clearLoop() {
-  Object.assign(S, { a: null, b: null, loopOn: false, activeId: null, zoom: false });
+  Object.assign(S, { a: null, b: null, loopOn: false, activeId: null, zoom: false, loopSpeed: null });
   clearGap();
+  resetSpeed();
   changed();
+}
+
+/** Turns the loop on and brings back its speed if it was switched off earlier. */
+function startLoop() {
+  if (S.loopOn) return;
+  S.loopOn = true;
+  if (S.loopSpeed != null) setSpeed(S.loopSpeed);
+  S.loopSpeed = null;
+}
+
+function resetSpeed() {
+  if (S.base != null) setSpeed(S.base);
 }
 
 function jumpA({ flash: show } = {}) {
@@ -305,7 +339,7 @@ function jumpA({ flash: show } = {}) {
 }
 
 function loadSection(s) {
-  Object.assign(S, { a: s.a, b: s.b, loopOn: true, activeId: s.id, loops: 0 });
+  Object.assign(S, { a: s.a, b: s.b, loopOn: true, activeId: s.id, loops: 0, loopSpeed: null });
   setSpeed(s.speed);
   seek(s.a);
   S.video?.play();
@@ -340,12 +374,13 @@ async function updateSection(id, patch) {
 async function deleteSection(id) {
   const removed = S.record?.sections.find((x) => x.id === id);
   if (!removed) return;
+  const wasActive = S.activeId === id;   // read first: the storage listener clears activeId mid-await
   S.record = await store.updateVideo(S.videoId, null, (rec) => {
     rec.sections = rec.sections.filter((x) => x.id !== id);
     return rec;
   });
-  if (S.activeId === id) S.activeId = null;
-  render();
+  if (wasActive) clearLoop();   // stop looping what was just deleted
+  else render();
   bar?.toast(`Deleted “${removed.name}”`, {
     label: 'Undo',
     run: async () => {
@@ -415,7 +450,7 @@ const actions = {
   openLibrary: () => chrome.runtime.sendMessage({ type: 'openLibrary' }),
   endDrag: (kind) => {
     S.loops = 0;
-    if (kind === 'range') { S.loopOn = true; seek(S.a); }
+    if (kind === 'range') { startLoop(); seek(S.a); }
     else if (kind === 'a' && S.loopOn) seek(S.a);
     render();
   },
